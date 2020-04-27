@@ -6,7 +6,7 @@ from utils import load_pickle
 def parse():
     parser = argparse.ArgumentParser(description='tree transformer')
     parser.add_argument('-model_dir', default='train_model', help='output model weight dir')
-    parser.add_argument('-batch_size', type=int, default=16)
+    parser.add_argument('-batch_size', type=int, default=256)
     parser.add_argument('-model', default='sbt-transformer', help='[ast-transformer, sbt-transformer, transformer]')
     parser.add_argument('-num_step', type=int, default=250)
     parser.add_argument('-num_layers', type=int, default=2, help='layer num')
@@ -15,7 +15,7 @@ def parse():
     parser.add_argument('-ffn_dim', type=int, default=2048)
 
     parser.add_argument('-data_dir', default='../dataset')
-    parser.add_argument('-code_max_len', type=int, default=100, help='max length of code')
+    parser.add_argument('-code_max_len', type=int, default=200, help='max length of code')
     parser.add_argument('-comment_max_len', type=int, default=30, help='comment max length')
     parser.add_argument('-relative_pos', type=bool, default=True, help='use relative position')
     parser.add_argument('-k', type=int, default=5, help='relative window size')
