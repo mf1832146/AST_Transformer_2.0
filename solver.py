@@ -79,7 +79,7 @@ class Solver:
         device = "cpu"
 
         if torch.cuda.is_available():
-            os.environ['CUDA_VISIBLE_DEVICES'] = self.args.g
+            torch.cuda.set_device(self.args.g)
             device = "cuda"
             print('use gpu')
 

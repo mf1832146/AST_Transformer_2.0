@@ -28,7 +28,7 @@ def parse():
 
     parser.add_argument('-log_dir', default='train_log/')
 
-    parser.add_argument('-g', default='1')
+    parser.add_argument('-g', type=int, default=1)
 
     args = parser.parse_args()
     return args
