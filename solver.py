@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from model.module import make_model, Train, GreedyEvaluate
 from train_utils import LabelSmoothing, BLEU4, MyLoss, Rouge, Meteor
 from ignite.contrib.handlers.tensorboard_logger import *
+import os
 
 
 class Solver:
@@ -78,6 +79,7 @@ class Solver:
         device = "cpu"
 
         if torch.cuda.is_available():
+            os.environ['CUDA_VISIBLE_DEVICES'] = self.args.g
             device = "cuda"
             print('use gpu')
 
