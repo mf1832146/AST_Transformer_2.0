@@ -21,6 +21,7 @@ class Solver:
         self.id2nl = id2nl
 
         self.nl_vocab_size = len(self.nl2id)
+        self.epoch = 0
 
         if self.args.model in ['ast-transformer', 'sbt-transformer']:
             code_len = len(self.ast2id)
@@ -79,7 +80,8 @@ class Solver:
         device = "cpu"
 
         if torch.cuda.is_available():
-            torch.cuda.set_device(self.args.g)
+            if self.args.g != 0:
+                torch.cuda.set_device(self.args.g)
             device = "cuda"
             print('use gpu')
 
@@ -92,70 +94,51 @@ class Solver:
 
         trainer = create_supervised_trainer(train_model, model_opt, criterion, device)
 
-        metric_train = {"loss": MyLoss(self.nl_vocab_size)}
-        metric_valid = {"bleu": BLEU4(self.id2nl), "rouge": Rouge(self.id2nl), "meteor": Meteor(self.id2nl)}
+        # metric_valid = {"bleu": BLEU4(self.id2nl), "rouge": Rouge(self.id2nl), "meteor": Meteor(self.id2nl)}
+        metric_valid = {"bleu": BLEU4(self.id2nl)}
 
-        pbar = ProgressBar(persist=True)
-        pbar.attach(trainer, metric_names="all")
         """
         train + generator
         validation + greedy_decode
         """
-        train_evaluator = create_supervised_evaluator(train_model, metric_train, device)
         validation_evaluator = create_supervised_evaluator(greedy_evaluator, metric_valid, device)
 
         # save model
-        save_handler = ModelCheckpoint('checkpoint/' + self.args.model, n_saved=5,
+        save_handler = ModelCheckpoint('checkpoint/' + self.args.model, n_saved=10,
                                        filename_prefix='',
                                        create_dir=True,
                                        global_step_transform=lambda e, _: e.state.epoch)
         trainer.add_event_handler(Events.EPOCH_COMPLETED(every=2), save_handler, {self.args.model: self.model})
 
         # early stop
-        early_stop_handler = EarlyStopping(patience=10, score_function=self.score_function, trainer=trainer)
+        early_stop_handler = EarlyStopping(patience=20, score_function=self.score_function, trainer=trainer)
         validation_evaluator.add_event_handler(Events.COMPLETED, early_stop_handler)
 
         @trainer.on(Events.EPOCH_COMPLETED)
         def compute_metrics(engine):
-            train_evaluator.run(train_loader)
-
-            train_metrics = train_evaluator.state.metrics
-            loss = train_metrics["loss"]
-
-            pbar.log_message(
-                "Training Results - Epoch: {} Avg loss: {:.2f}".format(
-                    engine.state.epoch, loss
-                )
-            )
 
             validation_evaluator.run(valid_loader)
 
-            valid_metrics = validation_evaluator.state.metrics
-            bleu = valid_metrics["bleu"]
-            rouge = valid_metrics["rouge"]
-            meteor = valid_metrics["meteor"]
-
-            pbar.log_message(
-                "Validation Results - Epoch: {} BLEU: {:.2f} ROUGE: {:.2f} METEOR: {:.2f}".format(
-                    engine.state.epoch, bleu, rouge, meteor
-                )
-            )
-
-            pbar.n = pbar.last_print_n = 0
+            print('Epoch ' + str(self.epoch) + ' end')
+            self.epoch += 1
 
         tb_logger = TensorboardLogger(self.args.log_dir + self.args.model + '/')
 
         tb_logger.attach(
-            train_evaluator,
-            log_handler=OutputHandler(
-                tag="training", metric_names=["loss"], another_engine=trainer),
+            validation_evaluator,
+            log_handler=OutputHandler(tag="validation", metric_names=["bleu"], another_engine=trainer),
             event_name=Events.EPOCH_COMPLETED,
         )
 
+        log_batch = int(train_data_set.__len__() / self.args.batch_size / 10)
+        if log_batch < 1:
+            log_batch = 1
         tb_logger.attach(
-            validation_evaluator,
-            log_handler=OutputHandler(tag="validation", metric_names=["bleu", "rouge", "meteor"], another_engine=trainer),
-            event_name=Events.EPOCH_COMPLETED,
+            trainer,
+            log_handler=OutputHandler(
+                tag="training", output_transform=lambda loss: {"batchloss": loss}, metric_names="all"
+            ),
+            event_name=Events.ITERATION_COMPLETED(every=log_batch),
         )
 
         trainer.run(train_loader, max_epochs=self.args.num_step)

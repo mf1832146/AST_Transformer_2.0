@@ -83,7 +83,7 @@ class BLEU4(Metric):
     @reinit__is_reduced
     def update(self, output):
         y_pred, y = output
-        scores = batch_bleu(y, y_pred, self._id2nl)
+        scores = batch_bleu(y, y_pred, self._id2nl, self._num_examples)
         self._bleu_scores += np.sum(scores)
         self._num_examples += len(scores)
 
@@ -108,7 +108,7 @@ class Rouge(Metric):
     @reinit__is_reduced
     def update(self, output):
         y_pred, y = output
-        scores = batch_rouge_l(y, y_pred, self._id2nl)
+        scores = batch_rouge_l(y, y_pred, self._id2nl, self._num_examples)
         self._rouge_scores += np.sum(scores)
         self._num_examples += len(scores)
 

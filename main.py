@@ -7,7 +7,7 @@ def parse():
     parser = argparse.ArgumentParser(description='tree transformer')
     parser.add_argument('-model_dir', default='train_model', help='output model weight dir')
     parser.add_argument('-batch_size', type=int, default=256)
-    parser.add_argument('-model', default='sbt-transformer', help='[ast-transformer, sbt-transformer, transformer]')
+    parser.add_argument('-model', default='ast-transformer', help='[ast-transformer, sbt-transformer, transformer]')
     parser.add_argument('-num_step', type=int, default=250)
     parser.add_argument('-num_layers', type=int, default=2, help='layer num')
     parser.add_argument('-model_dim', type=int, default=256)
@@ -15,12 +15,12 @@ def parse():
     parser.add_argument('-ffn_dim', type=int, default=2048)
 
     parser.add_argument('-data_dir', default='../dataset')
-    parser.add_argument('-code_max_len', type=int, default=200, help='max length of code')
+    parser.add_argument('-code_max_len', type=int, default=100, help='max length of code')
     parser.add_argument('-comment_max_len', type=int, default=30, help='comment max length')
     parser.add_argument('-relative_pos', type=bool, default=True, help='use relative position')
     parser.add_argument('-k', type=int, default=5, help='relative window size')
 
-    parser.add_argument('-dropout', type=float, default=0.2)
+    parser.add_argument('-dropout', type=float, default=0.5)
 
     parser.add_argument('-load', action='store_true', help='load pretrained model')
     parser.add_argument('-train', action='store_true')

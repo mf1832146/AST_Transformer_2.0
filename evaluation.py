@@ -24,7 +24,7 @@ def batch_evaluate(comments, predicts, nl_i2w):
     references = []
     hypothesises = []
     for i in range(batch_size):
-        reference = [nl_i2w[c.item()] for c in comments[i]][1:]
+        reference = [nl_i2w[c.item()] for c in comments[i]]
         if '</s>' in reference and reference.index('</s>') < len(reference):
             reference = reference[:reference.index('</s>')]
         hypothesis = [nl_i2w[c.item()] for c in predicts[i]][1:]
@@ -35,8 +35,11 @@ def batch_evaluate(comments, predicts, nl_i2w):
     return references, hypothesises
 
 
-def batch_rouge_l(comments, predicts, nl_i2w):
+def batch_rouge_l(comments, predicts, nl_i2w, i):
     references, hypothesises = batch_evaluate(comments, predicts, nl_i2w)
+    if i == 0:
+        for j in range(5):
+            print("真实:", references[j], "\n猜测:", hypothesises[j])
     scores = []
     for i in range(len(references)):
         if len(hypothesises[i]) == 0:
@@ -59,8 +62,11 @@ def batch_meteor(comments, predicts, nl_i2w):
     return scores
 
 
-def batch_bleu(comments, predicts, nl_i2w):
+def batch_bleu(comments, predicts, nl_i2w, i):
     references, hypothesises = batch_evaluate(comments, predicts, nl_i2w)
+    if i == 0:
+        for j in range(3):
+            print("真实:", references[j], "\n猜测:", hypothesises[j])
     scores = []
     for i in range(len(references)):
         bleu_score = nltk_sentence_bleu(hypothesises[i], references[i])
