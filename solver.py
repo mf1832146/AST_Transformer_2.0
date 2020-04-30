@@ -202,7 +202,7 @@ class Solver:
                     'trues:': ' '.join(references[j])
                 })
 
-        with open('predict_results.json', 'w') as f:
+        with open('predict_'+ self.args.model +'.json', 'w') as f:
             json.dump(results, f)
 
 
