@@ -26,6 +26,8 @@ def parse():
     parser.add_argument('-train', action='store_true')
     parser.add_argument('-test', action='store_true')
 
+    parser.add_argument('-load_epoch', type=str, default='')
+
     parser.add_argument('-log_dir', default='train_log/')
 
     parser.add_argument('-g', type=int, default=1)
@@ -50,4 +52,4 @@ if __name__ == '__main__':
     if args.train:
         solver.train()
     elif args.test:
-        solver.test()
+        solver.test(load_epoch=args.load_epoch)

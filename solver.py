@@ -1,3 +1,5 @@
+import json
+
 import torch
 from ignite.contrib.handlers import ProgressBar
 from ignite.engine import create_supervised_trainer, create_supervised_evaluator, Events
@@ -5,6 +7,8 @@ from ignite.handlers import ModelCheckpoint, EarlyStopping
 from pytorch_pretrained_bert import BertAdam
 from dataset import TreeDataSet, SeqDataSet, collate_fn
 from torch.utils.data import DataLoader
+
+from evaluation import batch_evaluate
 from model.module import make_model, Train, GreedyEvaluate
 from train_utils import LabelSmoothing, BLEU4, MyLoss, Rouge, Meteor
 from ignite.contrib.handlers.tensorboard_logger import *
@@ -148,3 +152,59 @@ class Solver:
     def score_function(engine):
         bleu = engine.state.metrics['bleu']
         return bleu
+
+    def load_model(self, load_epoch):
+        model_path = 'checkpoint/'+ self.args.model + '/' + self.args.model + '_' + load_epoch + '.pth'
+        self.model.load_state_dict(torch.load(model_path, map_location=lambda storage, loc: storage)['state_dict'])
+
+    def test(self, load_epoch):
+        self.load_model(load_epoch=load_epoch)
+        self.model.eval()
+
+        if self.args.model in ['ast-transformer', 'sbt-transformer']:
+            use_relative = True if self.args.model == 'ast-transformer' else False
+            test_data_set = TreeDataSet(file_name=self.args.data_dir + '/test.json',
+                                        ast_path=self.args.data_dir + '/tree/test/',
+                                        ast2id=self.ast2id,
+                                        nl2id=self.nl2id,
+                                        max_ast_size=self.args.code_max_len,
+                                        k=self.args.k,
+                                        max_comment_size=self.args.comment_max_len,
+                                        use_code=use_relative)
+        elif self.args.model in ['transformer']:
+            test_data_set = SeqDataSet(file_name=self.args.data_dir + '/test.json',
+                                       code2id=self.code2id,
+                                       nl2id=self.nl2id,
+                                       max_code_size=self.args.code_max_len,
+                                       max_comment_size=self.args.comment_max_len)
+
+        test_loader = DataLoader(dataset=test_data_set,
+                                  batch_size=self.args.batch_size,
+                                  shuffle=False,
+                                  collate_fn=collate_fn)
+
+        greedy_evaluator = GreedyEvaluate(self.model, self.args.comment_max_len, self.nl2id['<s>'])
+
+        results = []
+
+        for i, data_batch in enumerate(test_loader):
+            inputs, batch_predicts = data_batch
+            batch_code = inputs[0]
+            node_num = torch.sum(batch_code != 0, dim=1).item()
+
+            y_pred = greedy_evaluator(inputs)
+            references, hypothesises = batch_evaluate(y_pred, batch_predicts)
+
+            for j in range(len(references)):
+                results.append({
+                    'node_len': str(node_num[j]),
+                    'predict:': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
+                    'trues:': ' '.join(references[j])
+                })
+
+        with open('predict_results.json', 'w') as f:
+            json.dump(results, f)
+
+
+
+
