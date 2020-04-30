@@ -155,7 +155,9 @@ class Solver:
 
     def load_model(self, load_epoch):
         model_path = 'checkpoint/'+ self.args.model + '/' + self.args.model + '_' + load_epoch + '.pth'
-        self.model.load_state_dict(torch.load(model_path, map_location=lambda storage, loc: storage)['state_dict'])
+
+        checkpoint = torch.load(model_path)
+        self.model.load_state_dict(checkpoint)
 
     def test(self, load_epoch):
         self.load_model(load_epoch=load_epoch)
