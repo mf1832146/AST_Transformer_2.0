@@ -200,6 +200,12 @@ class Solver:
             references, hypothesises = batch_evaluate(y_pred, batch_predicts)
 
             for j in range(len(references)):
+                if i == 0 and j == 0:
+                    print({
+                    'node_len': str(node_num[j]),
+                    'predict:': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
+                    'trues:': ' '.join(references[j])
+                })
                 results.append({
                     'node_len': str(node_num[j]),
                     'predict:': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
