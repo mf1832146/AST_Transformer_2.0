@@ -193,6 +193,8 @@ class Solver:
             inputs, batch_predicts = data_batch
             batch_code = inputs[0]
             node_num = torch.sum(batch_code != 0, dim=1).data.item()
+            if  i == 0:
+                print(node_num)
 
             y_pred = greedy_evaluator(inputs)
             references, hypothesises = batch_evaluate(y_pred, batch_predicts)
