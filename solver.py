@@ -195,7 +195,7 @@ class Solver:
             node_num = torch.sum(batch_code != 0, dim=1).numpy()
 
             y_pred = greedy_evaluator(inputs)
-            references, hypothesises = batch_evaluate(y_pred, batch_predicts)
+            references, hypothesises = batch_evaluate(y_pred, batch_predicts, self.id2nl)
 
             for j in range(len(references)):
                 if i == 0 and j == 0:
