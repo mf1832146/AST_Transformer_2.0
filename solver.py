@@ -156,7 +156,10 @@ class Solver:
     def load_model(self, load_epoch):
         model_path = 'checkpoint/'+ self.args.model + '/' + self.args.model + '_' + load_epoch + '.pth'
 
-        checkpoint = torch.load(model_path)
+        if torch.cuda.is_available():
+            checkpoint = torch.load(model_path)
+        else:
+            checkpoint = torch.load(model_path, map_location='cpu')
         self.model.load_state_dict(checkpoint)
 
     def test(self, load_epoch):
@@ -201,13 +204,13 @@ class Solver:
                 if i == 0 and j == 0:
                     print({
                     'node_len': str(node_num[j]),
-                    'predict:': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
-                    'trues:': ' '.join(references[j])
+                    'predict': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
+                    'true' : ' '.join(references[j])
                 })
                 results.append({
                     'node_len': str(node_num[j]),
-                    'predict:': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
-                    'trues:': ' '.join(references[j])
+                    'predict': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
+                    'true': ' '.join(references[j])
                 })
 
         with open('predict_'+ self.args.model +'.json', 'w') as f:

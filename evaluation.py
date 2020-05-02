@@ -1,10 +1,18 @@
+import json
+import math
+import os
+import numpy as np
+
 import nltk
 from nltk.translate.meteor_score import *
 
-from nltk.translate.bleu_score import SmoothingFunction
 from nltk.translate.meteor_score import _generate_enums, _enum_allign_words, _count_chunks
 
 from rouge import Rouge
+from tensorboardX import SummaryWriter
+from nltk.translate.bleu_score import corpus_bleu, sentence_bleu, SmoothingFunction
+
+from utils import load_json
 
 rouge = Rouge(metrics=['rouge-l'])
 
@@ -76,10 +84,9 @@ def batch_bleu(comments, predicts, nl_i2w, i):
 
 def nltk_sentence_bleu(hypothesis, reference, order=4):
     cc = SmoothingFunction()
-    if len(hypothesis) < order:
+    if len(reference) < 4:
         return 0
-    else:
-        return nltk.translate.bleu([reference], hypothesis, smoothing_function=cc.method4)
+    return nltk.translate.bleu([reference], hypothesis, smoothing_function=cc.method4)
 
 
 def single_meteor_score(
@@ -110,7 +117,80 @@ def single_meteor_score(
     return precision, recall, fmean, (1 - penalty) * fmean
 
 
+def bleu4(true, pred):
+    c = len(pred)
+    r = len(true)
+    bp = 1. if c > r else np.exp(1 - r / (c + 1e-10))
+    score = 0
+    for i in range(1, 5):
+        true_ngram = set(ngram(true, i))
+        pred_ngram = ngram(pred, i)
+        length = float(len(pred_ngram)) + 1e-10
+        count = sum([1. if t in true_ngram else 0. for t in pred_ngram])
+        score += math.log(1e-10 + (count / length))
+    score = math.exp(score * .25)
+    bleu = bp * score
+    return bleu
+
+
+def ngram(words, n):
+    return list(zip(*(words[i:] for i in range(n))))
+
+
+def evaluate_on_file(path):
+    files = os.listdir(path)
+    for file in files:
+        if file.startswith('.D') or file.endswith('.txt'):
+            continue
+        writer = SummaryWriter(logdir='test_log/'+file.split('.')[0]+'/')
+        file_path = path + file
+        data = load_json(file_path)
+
+        node_len_bleu = {i: [] for i in range(41)}
+        com_len_bleu = {i: [] for i in range(31)}
+        bleu = []
+        nodes_num = {i: 0 for i in range(41)}
+
+        for i, d in enumerate(data):
+            node_len = int(int(d['node_len']) / 5)
+
+            predict = d['predict'].strip().split()
+            true = d['true'].split()
+
+            com_len = len(true)
+            if com_len > 30:
+                com_len = 30
+
+            if len(true) < 4:
+                continue
+            score = sentence_bleu([true], predict, smoothing_function=SmoothingFunction().method4)
+
+            node_len_bleu[node_len].append(score)
+            com_len_bleu[com_len].append(score)
+            bleu.append(score)
+            nodes_num[node_len] += 1
+
+        if file not in ['transformer_seq.json']:
+            for key, value in node_len_bleu.items():
+                if len(value) == 0:
+                    continue
+                score = np.mean(value)
+                writer.add_scalar('node_len_bleu', score, (key+1)*5)
+        for key, value in com_len_bleu.items():
+            if len(value) == 0:
+                continue
+            score = np.mean(value)
+            writer.add_scalar('com_len_bleu', score, key)
+        for key, value in nodes_num.items():
+            writer.add_scalar('nodes_num', value, key)
+
+        writer.close()
+        print(file.split('.')[0] + ': ' + str(np.mean(bleu)))
+
+
 if __name__ == '__main__':
-    reference = 'This is a test Ok'
-    candidate = 'This is a test unk Yes'
-    print(rouge_l_score(candidate, reference))
+    # reference = 'This is a test Ok'
+    # candidate = 'This is a test unk Yes'
+    # print(rouge_l_score(candidate, reference))
+    evaluate_on_file('./evaluate_file/')
+    #print(nltk_sentence_bleu(['D', 'A', 'object'], ['Frees', 'the', 'object']))
