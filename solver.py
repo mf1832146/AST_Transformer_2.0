@@ -196,7 +196,7 @@ class Solver:
 
         print('starting test...')
 
-        for i, data_batch in tqdm(enumerate(test_loader)):
+        for data_batch in tqdm(test_loader):
             inputs, batch_comments = data_batch
             batch_code = inputs[0]
             node_num = torch.sum(batch_code != 0, dim=1).numpy()
@@ -205,12 +205,6 @@ class Solver:
             references, hypothesises = batch_evaluate(batch_comments, y_pred, self.id2nl)
 
             for j in range(len(references)):
-                if i == 0 and j == 0:
-                    print({
-                    'node_len': str(node_num[j]),
-                    'predict': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
-                    'true' : ' '.join(references[j])
-                })
                 results.append({
                     'node_len': str(node_num[j]),
                     'predict': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
