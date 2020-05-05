@@ -5,6 +5,8 @@ from ignite.contrib.handlers import ProgressBar
 from ignite.engine import create_supervised_trainer, create_supervised_evaluator, Events
 from ignite.handlers import ModelCheckpoint, EarlyStopping
 from pytorch_pretrained_bert import BertAdam
+from tqdm import tqdm
+
 from dataset import TreeDataSet, SeqDataSet, collate_fn
 from torch.utils.data import DataLoader
 
@@ -192,7 +194,9 @@ class Solver:
 
         results = []
 
-        for i, data_batch in enumerate(test_loader):
+        print('starting test...')
+
+        for i, data_batch in tqdm(enumerate(test_loader)):
             inputs, batch_comments = data_batch
             batch_code = inputs[0]
             node_num = torch.sum(batch_code != 0, dim=1).numpy()
