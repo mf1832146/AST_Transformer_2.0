@@ -117,26 +117,6 @@ def single_meteor_score(
     return precision, recall, fmean, (1 - penalty) * fmean
 
 
-def bleu4(true, pred):
-    c = len(pred)
-    r = len(true)
-    bp = 1. if c > r else np.exp(1 - r / (c + 1e-10))
-    score = 0
-    for i in range(1, 5):
-        true_ngram = set(ngram(true, i))
-        pred_ngram = ngram(pred, i)
-        length = float(len(pred_ngram)) + 1e-10
-        count = sum([1. if t in true_ngram else 0. for t in pred_ngram])
-        score += math.log(1e-10 + (count / length))
-    score = math.exp(score * .25)
-    bleu = bp * score
-    return bleu
-
-
-def ngram(words, n):
-    return list(zip(*(words[i:] for i in range(n))))
-
-
 def evaluate_on_file(path):
     files = os.listdir(path)
     for file in files:
@@ -146,13 +126,18 @@ def evaluate_on_file(path):
         file_path = path + file
         data = load_json(file_path)
 
-        node_len_bleu = {i: [] for i in range(41)}
+        node_len_bleu = {i: [] for i in range(21)}
         com_len_bleu = {i: [] for i in range(31)}
         bleu = []
-        nodes_num = {i: 0 for i in range(41)}
+        rouge_all = []
+        meteor_all = []
+        nodes_num = {i: 0 for i in range(21)}
 
         for i, d in enumerate(data):
-            node_len = int(int(d['node_len']) / 5)
+            node_len = min(int(d['node_len']), 100)
+            node_len = int(node_len / 5)
+            if node_len > 40:
+                node_len = 40
 
             predict = d['predict'].strip().split()
             true = d['true'].split()
@@ -161,13 +146,19 @@ def evaluate_on_file(path):
             if com_len > 30:
                 com_len = 30
 
-            if len(true) < 4:
-                continue
-            score = sentence_bleu([true], predict, smoothing_function=SmoothingFunction().method4)
+            if len(predict) <= 1:
+                score = 0
+            else:
+                score = sentence_bleu([true], predict, smoothing_function=SmoothingFunction().method4)
+
+            _, _, rouge_s = rouge_l_score(d['predict'], d['true'])
+            meteor_s = meteor_score(d['predict'], d['true'])
 
             node_len_bleu[node_len].append(score)
             com_len_bleu[com_len].append(score)
             bleu.append(score)
+            rouge_all.append(rouge_s)
+            meteor_all.append(meteor_s)
             nodes_num[node_len] += 1
 
         if file not in ['transformer_seq.json']:
@@ -185,8 +176,12 @@ def evaluate_on_file(path):
             writer.add_scalar('nodes_num', value, key)
 
         writer.close()
-        print(file.split('.')[0] + ': ' + str(np.mean(bleu)))
+        print(file.split('.')[0] + ': bleu:' + round_3(bleu)
+              + ', rouge:' + round_3(rouge_all) + ', meteor:' + round_3(meteor_all))
 
+
+def round_3(a):
+    return str(round(np.mean(a), 3))
 
 if __name__ == '__main__':
     # reference = 'This is a test Ok'

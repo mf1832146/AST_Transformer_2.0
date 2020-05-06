@@ -25,6 +25,8 @@ def parse():
     parser.add_argument('-load', action='store_true', help='load pretrained model')
     parser.add_argument('-train', action='store_true')
     parser.add_argument('-test', action='store_true')
+    parser.add_argument('-visual', action='store_true')
+    parser.add_argument('-gold_test', action='store_true')
 
     parser.add_argument('-load_epoch', type=str, default='')
 
@@ -53,3 +55,7 @@ if __name__ == '__main__':
         solver.train()
     elif args.test:
         solver.test(load_epoch=args.load_epoch)
+    elif args.visual:
+        solver.visualize(load_epoch=args.load_epoch)
+    elif args.gold_test:
+        solver.gold_test(load_epoch=args.load_epoch)

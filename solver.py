@@ -14,7 +14,7 @@ from evaluation import batch_evaluate
 from model.module import make_model, Train, GreedyEvaluate
 from train_utils import LabelSmoothing, BLEU4, MyLoss, Rouge, Meteor
 from ignite.contrib.handlers.tensorboard_logger import *
-import os
+import numpy as np
 
 
 class Solver:
@@ -197,6 +197,7 @@ class Solver:
         print('starting test...')
 
         for data_batch in tqdm(test_loader):
+
             inputs, batch_comments = data_batch
             batch_code = inputs[0]
             node_num = torch.sum(batch_code != 0, dim=1).numpy()
@@ -213,6 +214,61 @@ class Solver:
 
         with open('predict_'+ self.args.model +'.json', 'w') as f:
             json.dump(results, f)
+
+    def visualize(self, load_epoch):
+        self.load_model(load_epoch=load_epoch)
+
+        parent_emb = self.model.state_dict()['encoder.relative_pos_emb.parent_emb.weight']
+        brother_emb = self.model.state_dict()['encoder.relative_pos_emb.brother_emb.weight']
+
+        np.savetxt('parent_emb.txt', parent_emb.numpy())
+        np.savetxt('brother_emb.txt', brother_emb.numpy())
+
+    def gold_test(self, load_epoch):
+        self.load_model(load_epoch=load_epoch)
+        self.model.eval()
+
+        if self.args.model in ['ast-transformer']:
+            test_data_set = TreeDataSet(file_name=self.args.data_dir + '/test_gold.json',
+                                        ast_path=self.args.data_dir + '/tree/test/',
+                                        ast2id=self.ast2id,
+                                        nl2id=self.nl2id,
+                                        max_ast_size=self.args.code_max_len,
+                                        k=self.args.k,
+                                        max_comment_size=self.args.comment_max_len,
+                                        use_code=True)
+
+            test_loader = DataLoader(dataset=test_data_set,
+                                     batch_size=1,
+                                     shuffle=False,
+                                     collate_fn=collate_fn)
+
+            greedy_evaluator = GreedyEvaluate(self.model, self.args.comment_max_len, self.nl2id['<s>'])
+
+            results = []
+
+            print('starting gold test...')
+
+            for data_batch in tqdm(test_loader):
+
+                inputs, batch_comments = data_batch
+
+                batch_code = inputs[0]
+                node_num = torch.sum(batch_code != 0, dim=1).numpy()
+
+                y_pred = greedy_evaluator(inputs)
+                references, hypothesises = batch_evaluate(batch_comments, y_pred, self.id2nl)
+
+                for j in range(len(references)):
+                    results.append({
+                        'node_len': str(node_num[j]),
+                        'predict': ' '.join(hypothesises[j]) if len(hypothesises[j]) > 0 else '',
+                        'true': ' '.join(references[j])
+                    })
+
+            with open('predict_' + self.args.model + '.json', 'w') as f:
+                json.dump(results, f)
+
 
 
 

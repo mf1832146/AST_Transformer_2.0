@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import math
 import torch.nn as nn
 
+import numpy as np
+
 
 def relative_mul(q, relative):
     """relative position dot product"""
@@ -54,6 +56,7 @@ def attention(query, key, value, mask=None, dropout=None):
     if mask is not None:
         scores = scores.masked_fill(mask == 0, -1e9)
     p_attn = F.softmax(scores, dim=-1)
+
     if dropout is not None:
         p_attn = dropout(p_attn)
     output = torch.matmul(p_attn, value)
@@ -103,4 +106,6 @@ class MultiHeadedAttention(nn.Module):
         # 3) "Concat" using a view and apply a final linear.
         x = x.transpose(1, 2).contiguous() \
             .view(nbatches, -1, self.h * self.d_k)
+
+        print(self.attn.shape)
         return self.linears[-1](x)
