@@ -266,7 +266,7 @@ class Solver:
                         'true': ' '.join(references[j])
                     })
 
-            with open('predict_' + self.args.model + '.json', 'w') as f:
+            with open('gold_predict_' + self.args.model + '.json', 'w') as f:
                 json.dump(results, f)
 
 
