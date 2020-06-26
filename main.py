@@ -14,7 +14,7 @@ def parse():
     parser.add_argument('-num_heads', type=int, default=8)
     parser.add_argument('-ffn_dim', type=int, default=2048)
 
-    parser.add_argument('-data_dir', default='../dataset')
+    parser.add_argument('-data_dir', default='../data_set')
     parser.add_argument('-code_max_len', type=int, default=100, help='max length of code')
     parser.add_argument('-comment_max_len', type=int, default=30, help='comment max length')
     parser.add_argument('-relative_pos', type=bool, default=True, help='use relative position')
@@ -28,7 +28,7 @@ def parse():
     parser.add_argument('-visual', action='store_true')
     parser.add_argument('-gold_test', action='store_true')
 
-    parser.add_argument('-load_epoch', type=str, default='')
+    parser.add_argument('-load_epoch', type=str, default='108')
 
     parser.add_argument('-log_dir', default='train_log/')
 

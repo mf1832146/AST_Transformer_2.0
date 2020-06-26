@@ -137,10 +137,13 @@ def sub_tree(root, i=0, max_size=200):
 
 
 class Node:
-    def __init__(self, label="", parent=None, children=[], num=0):
+    """树节点抽象"""
+    def __init__(self, label="", parent=None, is_simple_name=False, simple_name=None, is_leaf_node=False, children=[]):
         self.label = label
         self.parent = parent
         self.children = children
-        self.num = num
+        self.is_simple_name = is_simple_name
+        self.simple_name = simple_name
+        self.is_leaf_node = is_leaf_node
 
 
