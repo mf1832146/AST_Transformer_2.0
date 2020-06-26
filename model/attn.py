@@ -1,4 +1,5 @@
 import copy
+import time
 
 import torch
 import torch.nn.functional as F
@@ -79,6 +80,7 @@ class MultiHeadedAttention(nn.Module):
         self.linears = clones(nn.Linear(d_model, d_model), 4)
         self.attn = None
         self.dropout = nn.Dropout(p=dropout)
+        self.i = 0
 
     def forward(self, query, key, value, mask=None, relative_q=None, relative_v=None):
         "Implements Figure 2"
@@ -107,5 +109,17 @@ class MultiHeadedAttention(nn.Module):
         x = x.transpose(1, 2).contiguous() \
             .view(nbatches, -1, self.h * self.d_k)
 
-        print(self.attn.shape)
+        # if relative_q is not None:
+        #     self.attn = self.attn[:, :20, :20]
+        #     self.attn = self.attn.contiguous().view(8, -1)
+        #     np.savetxt('./visiualize/tree_attn_' + str(time.time()) + '.txt', self.attn.data.numpy())
+
+        # if relative_q is None:
+        #     if self.attn.size(-1) == 100 and self.attn.size(-2) == 8:
+        #         self.attn = self.attn[:, :, :, :20].squeeze(0)
+        #         print(self.attn.size())
+        #         self.attn = self.attn.contiguous().view(8, 8*20)
+        #         np.savetxt('./visiualize/nl_attn.txt', self.attn.data.numpy())
+
+
         return self.linears[-1](x)

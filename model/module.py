@@ -193,6 +193,7 @@ class GreedyEvaluate(nn.Module):
                                     code_mask,
                                     Variable(ys),
                                     Variable(subsequent_mask(ys.size(1)).type_as(code.data)))
+
             prob = self.model.generator(out[:, -1])
             _, next_word = torch.max(prob, dim=1)
             ys = torch.cat([ys,
